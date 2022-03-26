@@ -1,3 +1,4 @@
+from functools import cache
 import numpy as np
 import pandas as pd
 from activation_functions import get_function
@@ -20,7 +21,7 @@ class NeuralNetwork():
                  alpha: float = 0.05) -> None:
         """
         :param L: int
-            neural network layer number
+            neural network layer number (hidden+last)
         :param activation: str
             activation function name
             possible values - {ReLU, sigmoid, tanh}
@@ -89,15 +90,43 @@ class NeuralNetwork():
         b = np.zeros((self.neurons_number[l], 1))
         return W, b
 
-    def predict(self, X: np.array, return_activation_cach=False):
+    def fit(self,
+            X,
+            y,
+            dataset=None,
+            return_losses=False,
+            return_accuracy_list=False):
+        """
+        """
+        m = len(y)
+        outp, cache = self.predict(X)
+        dZ = outp - y
+        dW = (1 / m) * (dZ @ outp.T)
+        db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
+        W = self.parameters["W{}".format(self.L)]
+        b = self.parameters["b{}".format(self.L)]
+        W = W - self.alpha * dW
+        b = b - self.alpha * db
+        for layer_index in range(1, self.L - 1):
+            W = self.parameters["W{}".format(layer_index)]
+            b = self.parameters["b{}".format(layer_index)]
+            Z = cache["Z{}".format(layer_index)]
+            dZ = W.T @ dZ # @ activ. func. derivative (Z) 
+            dW = (1 / m) * (dZ @ Z.T)
+            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
+            W = W - self.alpha * dW
+            b = b - self.alpha * db
+
+
+    def predict(self, X: np.array, return_activation_cache=False):
         Z = X
         cach_data = {}
         for layer_index in range(1, self.L):
             A = np.dot(self.parameters["W{}".format(layer_index)], Z) +\
                                      self.parameters["b{}".format(layer_index)]
             Z = self.activation_func(A)
-            if return_activation_cach:
+            if return_activation_cache:
                 cach_data["Z{}".format(layer_index)] = Z
-        if return_activation_cach:
+        if return_activation_cache:
             return Z, cach_data
         return Z
