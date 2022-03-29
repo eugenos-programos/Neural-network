@@ -1,6 +1,4 @@
-from functools import cache
 import numpy as np
-import pandas as pd
 from activation_functions import get_function_and_derivative
 from types import LambdaType
 
@@ -101,14 +99,14 @@ class NeuralNetwork():
         """
         """
         m = len(y)
-        print()
         outp, cache = self.predict(X, return_activation_cache=True)
-        dZ = outp - y
-        dW = (1 / m) * (dZ @ outp.T)
-        db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
-        W = self.parameters["W{}".format(self.L - 1)]
-        b = self.parameters["b{}".format(self.L - 1)]
-        self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
+        outp = outp.T # (5, 1)
+        dZ = outp - y # (5, 1)
+        dW = (1 / m) * (dZ @ outp.T) # (5, 5)
+        db = (1 / m) * np.sum(dZ, axis=1, keepdims=True) # (5, 1)
+        W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
+        print(dW.shape, W.shape)
+        self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW.T
         self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
         for layer_index in range(self.L - 1, 1, -1):
             print(layer_index)
@@ -119,12 +117,17 @@ class NeuralNetwork():
             self.parameters["W{}".format(layer_index)] -= self.alpha * dW
             self.parameters["b{}".format(layer_index)] -= self.alpha * db
             W = self.parameters["W{}".format(layer_index)]
-            b = self.parameters["b{}".format(layer_index)]
 
+    def calculate_accuracy(self, X, y):
+        y_pred = self.predict(X)
+        true = (y_pred == y).sum()
+        all = len(y)
+        return true / all
 
     def predict(self, X: np.array, return_activation_cache=False):
-        Z = X
+        Z = X.T
         cache_data = {}
+        
         for layer_index in range(1, self.L):
             A = np.dot(self.parameters["W{}".format(layer_index)], Z) +\
                                      self.parameters["b{}".format(layer_index)]
