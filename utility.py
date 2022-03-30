@@ -4,7 +4,17 @@ from pandas import array
 
 def train_test_split(X, y, test_size=.2) -> tuple:
     """
+    Split dataset into train and test samples
+    :param X: np.array
+        input features
+    :param y: np.array
+        target data
+    :param test_size: float/double
+        setting the size of test dataset, 
+        should be in range between 0 and 1
     """
+    if not (test_size > 0 and test_size < 1):
+        raise ValueError("Uncorrect test size value - {}".format(test_size)) 
     dataset = np.concatenate(X, y, axis=1)
     np.random.shuffle(dataset)
     m = dataset.shape[0]
@@ -17,12 +27,22 @@ def train_test_split(X, y, test_size=.2) -> tuple:
 
 def create_dataset(X: np.array, y, batch_size=4, shuffle=True):
     """
+    Create dataset with N batches
+    :param X: np.array
+        input data
+    :param y: np.array
+        target data
+    :param batch_size: float/double
+        setting the size of batch
+    :param shuffle: bool
+        shuffle dataset or not
     """
     if len(X.shape) != 2:
         raise ValueError("Uncorrect shape for X. Should be 3-dimensional") 
     m, n = X.shape
     data = np.concatenate([X, y], axis=1)
-    np.random.shuffle(data)
+    if shuffle:
+        np.random.shuffle(data)
     X_shuffled, y_shuffled = data[:, :-1], data[:, -1]
     batch_count = len(y_shuffled) // batch_size
     dataset = []

@@ -72,6 +72,9 @@ class NeuralNetwork():
                                 format(len(activations_list), N))
         pass
 
+    def calculate_loss(X: np.array = None, y:np.array = None, data: np.array = None):
+        pass
+
     def initialize_weights(self) -> None:
         for index in range(1, self.L):
             W, b = self.initialize_layer_weights(index)
@@ -112,19 +115,16 @@ class NeuralNetwork():
             print(layer_index)
             Z = cache["Z{}".format(layer_index)]
             dZ = (W.T @ dZ) @ self.activation_func_derivative(Z)
-            dW = (1 / m) * (dZ @ Z.T)
+            dW = (1 / m) * (dZ @ Z.T)   
             db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
             self.parameters["W{}".format(layer_index)] -= self.alpha * dW
             self.parameters["b{}".format(layer_index)] -= self.alpha * db
             W = self.parameters["W{}".format(layer_index)]
 
-    def calculate_accuracy(self, X, y):
-        y_pred = self.predict(X)
-        true = (y_pred == y).sum()
-        all = len(y)
-        return true / all
-
     def predict(self, X: np.array, return_activation_cache=False):
+        """
+        
+        """
         Z = X.T
         cache_data = {}
         
@@ -142,5 +142,5 @@ class NeuralNetwork():
 nn = NeuralNetwork(5, neuron_number_list=[4, 5, 5, 5, 1], activation='ReLU') 
 X = np.random.rand(5, 4)
 y = np.random.rand(5, 1)
-print(nn.fit(X, y))
+print(nn.predict(X))
 
