@@ -1,3 +1,6 @@
+from curses.ascii import LF
+from lib2to3.pgen2.pgen import DFAState
+from matplotlib.pyplot import figlegend
 import numpy as np
 from activation_functions import get_function_and_derivative
 from types import LambdaType
@@ -76,6 +79,9 @@ class NeuralNetwork():
         pass
 
     def initialize_weights(self) -> None:
+        """
+        initialize neural network weights
+        """
         for index in range(1, self.L):
             W, b = self.initialize_layer_weights(index)
             self.parameters["W{}".format(index)] = W
@@ -83,8 +89,13 @@ class NeuralNetwork():
 
     def initialize_layer_weights(self, l: int) -> tuple:
         """
-        Return weights and bias vector
+        initialize weights on l-th layer
+        :param l: int
+            layer index
+        :return: weights and bias vector
         """
+        if not isinstance(l, int):
+            raise TypeError("l parameter should be int type")
         if l <= 0:
             raise BaseException(
                 "Uncorrect l value - {}. Must be not negative.".format(l))
@@ -96,16 +107,25 @@ class NeuralNetwork():
     def fit(self,
             X,
             y,
-            dataset=None,
             return_losses=False,
             return_accuracy_list=False):
         """
+        Backward propagation step for neural network
+        :param X: np.array
+            input data
+        :param y: np.array
+            target data
+        :param return_losses: bool
+            return loss on each iteration 
+        :param return_accuracy_list: bool
+            return accuracy on each iteration 
+            on input data
         """
         m = len(y)
-        outp, cache = self.predict(X, return_activation_cache=True)
+        outp, cache = self.predict(X, return_activation_cache=True) # (1, 5)
         outp = outp.T # (5, 1)
         dZ = outp - y # (5, 1)
-        dW = (1 / m) * (dZ @ outp.T) # (5, 5)
+        dW = (1 / m) * (dZ @ outp) # (5, 5)
         db = (1 / m) * np.sum(dZ, axis=1, keepdims=True) # (5, 1)
         W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
         print(dW.shape, W.shape)
@@ -123,14 +143,22 @@ class NeuralNetwork():
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
-        
+        Forward propagation step in neural network
+        :param X: np.array
+            input data
+        :param return_activation_cache: bool
+            return or not activation cache
+            that contain Z values  
+        :return: y - predicted target value 
+                y, Z - predicted target value and activations in each layer
+                whet return_activation_cache parameter is true 
         """
         Z = X.T
         cache_data = {}
-        
         for layer_index in range(1, self.L):
-            A = np.dot(self.parameters["W{}".format(layer_index)], Z) +\
-                                     self.parameters["b{}".format(layer_index)]
+            W = self.parameters["W{}".format(layer_index)]
+            b = self.parameters["b{}".format(layer_index)]
+            A = np.dot(W, Z) + b
             Z = self.activation_func(A)
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
@@ -142,5 +170,5 @@ class NeuralNetwork():
 nn = NeuralNetwork(5, neuron_number_list=[4, 5, 5, 5, 1], activation='ReLU') 
 X = np.random.rand(5, 4)
 y = np.random.rand(5, 1)
-print(nn.predict(X))
+print(nn.predict(X, y).shape)
 
