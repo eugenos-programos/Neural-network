@@ -1,6 +1,3 @@
-from curses.ascii import LF
-from lib2to3.pgen2.pgen import DFAState
-from matplotlib.pyplot import figlegend
 import numpy as np
 from activation_functions import get_function_and_derivative
 from types import LambdaType
@@ -122,24 +119,27 @@ class NeuralNetwork():
             on input data
         """
         m = len(y)
-        outp, cache = self.predict(X, return_activation_cache=True) # (1, 5)
-        outp = outp.T # (5, 1)
-        dZ = outp - y # (5, 1)
-        dW = (1 / m) * (dZ @ outp) # (5, 5)
-        db = (1 / m) * np.sum(dZ, axis=1, keepdims=True) # (5, 1)
-        W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
-        print(dW.shape, W.shape)
-        self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW.T
-        self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-        for layer_index in range(self.L - 1, 1, -1):
-            print(layer_index)
-            Z = cache["Z{}".format(layer_index)]
-            dZ = (W.T @ dZ) @ self.activation_func_derivative(Z)
-            dW = (1 / m) * (dZ @ Z.T)   
-            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
-            self.parameters["W{}".format(layer_index)] -= self.alpha * dW
-            self.parameters["b{}".format(layer_index)] -= self.alpha * db
-            W = self.parameters["W{}".format(layer_index)]
+        for index in range(m):
+            x_ = X[index]
+            print(x_.shape)
+            outp, cache = self.predict(x_, return_activation_cache=True) # (1, 5)
+            outp = outp.T # (5, 1)
+            dZ = outp - y # (5, 1)
+            print(outp.shape, dZ.shape)
+            dW = (1 / m) * (dZ @ outp) # (5, 5)
+            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True) # (5, 1)
+            W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
+            self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW.T
+            self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
+            for layer_index in range(self.L - 1, 1, -1):
+                print(layer_index)
+                Z = cache["Z{}".format(layer_index)]
+                dZ = (W.T @ dZ) @ self.activation_func_derivative(Z)
+                dW = (1 / m) * (dZ @ Z.T)   
+                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
+                self.parameters["W{}".format(layer_index)] -= self.alpha * dW
+                self.parameters["b{}".format(layer_index)] -= self.alpha * db
+                W = self.parameters["W{}".format(layer_index)]
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
@@ -151,24 +151,30 @@ class NeuralNetwork():
             that contain Z values  
         :return: y - predicted target value 
                 y, Z - predicted target value and activations in each layer
-                whet return_activation_cache parameter is true 
+                when return_activation_cache parameter is true 
         """
+        if self.parameters["W1"].shape[1] != X.shape[1]:
+            raise ValueError("X shape doesn't correspond to weight shape on first layer")
         Z = X.T
+        print(Z.shape)
         cache_data = {}
         for layer_index in range(1, self.L):
             W = self.parameters["W{}".format(layer_index)]
             b = self.parameters["b{}".format(layer_index)]
             A = np.dot(W, Z) + b
             Z = self.activation_func(A)
+            print(Z.shape)
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
+        Z = Z.T
         if return_activation_cache:
             return Z, cache_data
         return Z
 
 
 nn = NeuralNetwork(5, neuron_number_list=[4, 5, 5, 5, 1], activation='ReLU') 
-X = np.random.rand(5, 4)
+X = np.random.rand(145, 4)
 y = np.random.rand(5, 1)
-print(nn.predict(X, y).shape)
+print("Shape - {}".format(nn.predict(X).shape))
+
 
