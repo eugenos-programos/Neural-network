@@ -123,18 +123,19 @@ class NeuralNetwork():
         for index in range(m):
             x_ = X[index]
             outp, cache = self.predict(x_, return_activation_cache=True)  # (5, 1)
-            print(outp.shape, x_.shape)
-            dZ = outp - y  # (5, 1)
-            dW = (1 / m) * (dZ @ outp.T)  # (5, 5)
+            dZ = outp - y  # (1, 1)
+            A = cache["A{}".format(self.L - 2)]
+            dW = (1 / m) * (dZ @ A.T)  # (1, 1)
             db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  # (5, 1)
             W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
             self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
             self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-            for layer_index in range(self.L - 1, 1, -1):
+            for layer_index in range(self.L - 2, 0, -1):
                 print(layer_index)
                 Z = cache["Z{}".format(layer_index)]
-                dZ = (W.T @ dZ) @ self.activation_func_derivative(Z)
-                dW = (1 / m) * (dZ @ Z.T)
+                A = cache["A{}".format(layer_index - 1)]
+                dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
+                dW = (1 / m) * (dZ @ A.T)
                 db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
                 self.parameters["W{}".format(layer_index)] -= self.alpha * dW
                 self.parameters["b{}".format(layer_index)] -= self.alpha * db
@@ -157,25 +158,26 @@ class NeuralNetwork():
         if len(X.shape) == 1:
             X = X.reshape(1, X.shape[0])
         try:
-            Z = np.dot(self.parameters["W1"], X.T)
+            np.dot(self.parameters["W1"], X.T)
         except Exception as e:
             raise ValueError("X shape doesn't corresponding the the neural-net first layer size")
-        Z = X.T
-        cache_data = {}
+        A = X.T
+        cache_data = {"A0" : A}
         for layer_index in range(1, self.L):
             W = self.parameters["W{}".format(layer_index)]
             b = self.parameters["b{}".format(layer_index)]
-            A = np.dot(W, Z) + b
-            Z = self.activation_func(A)
+            Z = np.dot(W, A) + b
+            A = self.activation_func(Z)
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
-        Z = Z.T
+                cache_data["A{}".format(layer_index)] = A
+        A = A.T
         if return_activation_cache:
-            return Z, cache_data
-        return Z
+            return A, cache_data
+        return A
 
 
 nn = NeuralNetwork(5, neuron_number_list=np.array([4, 5, 5, 5, 1]), activation='ReLU')
-X = np.random.rand(4, )
-y = np.random.rand(5, 1)
-nn.fit(X).shape
+X = np.random.rand(1, 4)
+y = np.random.rand(1, 1)
+nn.fit(X, y)
