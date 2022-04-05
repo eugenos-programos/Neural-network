@@ -123,7 +123,7 @@ class NeuralNetwork():
         for index in range(m):
             x_ = X[index]
             outp, cache = self.predict(x_, return_activation_cache=True)  # (5, 1)
-            dZ = outp - y  # (1, 1)
+            dZ = outp - y[index]  # (1, 1)
             A = cache["A{}".format(self.L - 2)]
             dW = (1 / m) * (dZ @ A.T)  # (1, 1)
             db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  # (5, 1)
@@ -178,6 +178,9 @@ class NeuralNetwork():
 
 
 nn = NeuralNetwork(5, neuron_number_list=np.array([4, 5, 5, 5, 1]), activation='ReLU')
-X = np.random.rand(1, 4)
-y = np.random.rand(1, 1)
+X = np.random.rand(123, 4)
+y = np.random.rand(123, 1)
+print(nn.predict(X))
 nn.fit(X, y)
+print(nn.predict(X))
+print("y=", y)
