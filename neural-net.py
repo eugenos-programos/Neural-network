@@ -1,9 +1,11 @@
 import numpy as np
 from activation_functions import get_function_and_derivative
 from types import LambdaType
+from Utility.losses import mean_absolute_loss
+import matplotlib.pyplot as plt
 
 
-class NeuralNetwork():
+class NeuralNetwork:
     activation_func: LambdaType
     activation_func_derivative: LambdaType
     alpha: int
@@ -131,7 +133,7 @@ class NeuralNetwork():
             self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
             self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
             for layer_index in range(self.L - 2, 0, -1):
-                print(layer_index)
+                #print(layer_index)
                 Z = cache["Z{}".format(layer_index)]
                 A = cache["A{}".format(layer_index - 1)]
                 dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
@@ -180,7 +182,9 @@ class NeuralNetwork():
 nn = NeuralNetwork(5, neuron_number_list=np.array([4, 5, 5, 5, 1]), activation='ReLU')
 X = np.random.rand(123, 4)
 y = np.random.rand(123, 1)
-print(nn.predict(X))
-nn.fit(X, y)
-print(nn.predict(X))
-print("y=", y)
+losses = []
+for ep in range(60):
+    nn.fit(X, y)
+    losses.append(mean_absolute_loss(nn.predict(X), y))
+plt.plot(range(60), losses)
+plt.show()

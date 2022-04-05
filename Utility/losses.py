@@ -10,10 +10,10 @@ def mean_absolute_loss(y_true: np.array, y_pred: np.array) -> float:
     :return: MAE loss value of float type
     """
     try:
-        m = y_true.shape
+        m = y_true.shape[0]
         loss_value = np.sum(np.abs(y_true - y_pred)) / m
     except Exception as exception:
-        raise ValueError("Invalid arrays shapes: should be (m, 1) or (m,), with similar m.")
+        raise ValueError("Invalid arrays shapes: should be (m, 1) or (m,), with similar m")
     return loss_value
 
 
@@ -25,4 +25,9 @@ def mean_squared_loss(y_true: np.array, y_pred: np.array) -> float:
     :param y_pred: numpy array of predicted labels with shape (m, 1) or (m,)
     :return: MAE loss value of float type
     """
-    pass
+    try:
+        m = y_true.shape[0]
+        loss_value = np.sum((y_true - y_pred) ** 2) / m
+    except Exception as exception:
+        raise ValueError("Invalid arrays shapes: should be (m, 1) or (m,), with similar m")
+    return loss_value
