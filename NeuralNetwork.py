@@ -107,41 +107,50 @@ class NeuralNetwork:
     def fit(self,
             X,
             y,
+            n_epochs=10,
             return_losses=False,
-            return_accuracy_list=False):
+            loss=None):
         """
         Backward propagation step for neural network
         :param X: np.array
             input data
         :param y: np.array
             target data
+        :param n_epochs: int
+            number of epochs, default is 10
         :param return_losses: bool
-            return loss on each iteration 
-        :param return_accuracy_list: bool
-            return accuracy on each iteration 
-            on input data
+            return loss on each iteration, default is False
+        :param loss: built-in function
+            loss for return_losses parameter
         """
-        m = len(y)
-        for index in range(m):
-            x_ = X[index]
-            outp, cache = self.predict(x_, return_activation_cache=True)  # (5, 1)
-            dZ = outp - y[index]  # (1, 1)
-            A = cache["A{}".format(self.L - 2)]
-            dW = (1 / m) * (dZ @ A.T)  # (1, 1)
-            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  # (5, 1)
-            W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
-            self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
-            self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-            for layer_index in range(self.L - 2, 0, -1):
-                #print(layer_index)
-                Z = cache["Z{}".format(layer_index)]
-                A = cache["A{}".format(layer_index - 1)]
-                dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
-                dW = (1 / m) * (dZ @ A.T)
-                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
-                self.parameters["W{}".format(layer_index)] -= self.alpha * dW
-                self.parameters["b{}".format(layer_index)] -= self.alpha * db
-                W = self.parameters["W{}".format(layer_index)]
+        if return_losses:
+            loses = []
+        for epoch in range(n_epochs):
+            m = len(y)
+            for index in range(m):
+                x_ = X[index]
+                outp, cache = self.predict(x_, return_activation_cache=True)  # (5, 1)
+                dZ = outp - y[index]  # (1, 1)
+                A = cache["A{}".format(self.L - 2)]
+                dW = (1 / m) * (dZ @ A.T)  # (1, 1)
+                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  # (5, 1)
+                W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
+                self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
+                self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
+                for layer_index in range(self.L - 2, 0, -1):
+                    #print(layer_index)
+                    Z = cache["Z{}".format(layer_index)]
+                    A = cache["A{}".format(layer_index - 1)]
+                    dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
+                    dW = (1 / m) * (dZ @ A.T)
+                    db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
+                    self.parameters["W{}".format(layer_index)] -= self.alpha * dW
+                    self.parameters["b{}".format(layer_index)] -= self.alpha * db
+                    W = self.parameters["W{}".format(layer_index)]
+            if return_losses:
+                loses.append(loss(self.predict(X), y))
+        if return_losses:
+            return loses
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
@@ -177,14 +186,3 @@ class NeuralNetwork:
         if return_activation_cache:
             return A, cache_data
         return A
-
-
-nn = NeuralNetwork(5, neuron_number_list=np.array([4, 5, 5, 5, 1]), activation='ReLU')
-X = np.random.rand(123, 4)
-y = np.random.rand(123, 1)
-losses = []
-for ep in range(60):
-    nn.fit(X, y)
-    losses.append(mean_absolute_loss(nn.predict(X), y))
-plt.plot(range(60), losses)
-plt.show()
