@@ -1,7 +1,9 @@
 import numpy as np
+from DataLoaderIterator import DataLoaderIterator
 
-class Dataloader():
-    def __init__(X: np.array, y, batch_size=4, shuffle=True):
+
+class Dataloader:
+    def __init__(self, X: np.array, y: np.array, batch_size: int = 4, shuffle: bool = True):
         """
         Create dataset with N batches
         :param X: np.array
@@ -14,7 +16,7 @@ class Dataloader():
         shuffle dataset or not
         """
         if len(X.shape) != 2:
-            raise ValueError("Uncorrect shape for X. Should be 3-dimensional")
+            raise ValueError("Incorrect shape for X. Should be 3-dimensional")
         m, n = X.shape
         data = np.concatenate([X, y], axis=1)
         if shuffle:
@@ -29,4 +31,7 @@ class Dataloader():
             dataset.append(
                 (np.array(X_shuffled[start_index:start_index + batch_size]),
                  np.array(y_shuffled[start_index:start_index + batch_size])))
-        return dataset
+        self.dataset = dataset
+
+    def __iter__(self):
+        return DataLoaderIterator(self)
