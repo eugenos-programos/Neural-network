@@ -29,8 +29,8 @@ class Dataloader:
             X_batch = X_shuffled[start_index:start_index + batch_size]
             y_batch = y_shuffled[start_index:start_index + batch_size]
             dataset.append(
-                (np.array(X_shuffled[start_index:start_index + batch_size]),
-                 np.array(y_shuffled[start_index:start_index + batch_size])))
+                (np.array(X_batch),
+                 np.array(y_batch)))
         self.dataset = dataset
 
     def __iter__(self):

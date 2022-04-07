@@ -14,8 +14,8 @@ def train_test_split(X, y, test_size=.2) -> tuple:
         setting the size of test dataset, 
         should be in range between 0 and 1
     """
-    if not (test_size > 0 and test_size < 1):
-        raise ValueError("Uncorrect test size value - {}".format(test_size))
+    if test_size < 0 or test_size > 1:
+        raise ValueError("Incorrect test size value - {}. Should be in interval (0, 1)".format(test_size))
     dataset = np.concatenate(X, y, axis=1)
     np.random.shuffle(dataset)
     m = dataset.shape[0]
