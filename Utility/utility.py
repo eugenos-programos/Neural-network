@@ -3,7 +3,7 @@ import numpy as np
 from pandas import array
 
 
-def train_test_split(X, y, test_size=.2) -> tuple:
+def train_test_split(X: np.array, y: np.array, test_size: float = .2) -> tuple:
     """
     Split dataset into train and test samples
     :param X: np.array
@@ -14,6 +14,8 @@ def train_test_split(X, y, test_size=.2) -> tuple:
         setting the size of test dataset, 
         should be in range between 0 and 1
     """
+    if not(isinstance(X, np.array) and isinstance(y, np.array)):
+        raise TypeError("Input arrays should be numpy arrays")
     if test_size < 0 or test_size > 1:
         raise ValueError("Incorrect test size value - {}. Should be in interval (0, 1)".format(test_size))
     dataset = np.concatenate(X, y, axis=1)

@@ -57,5 +57,9 @@ def sigmoid(X: np.array) -> np.array:
 
 def sigmoid_derivative(X: np.array) -> np.array:
     """
+    Compute sigmoid derivative
+    :param X: numpy array
+    :return: df(x), where f - sigmoid function
     """
-    pass
+    dX = 1 - sigmoid(X)
+    return dX

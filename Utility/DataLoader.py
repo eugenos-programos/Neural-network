@@ -17,7 +17,6 @@ class Dataloader:
         """
         if len(X.shape) != 2:
             raise ValueError("Incorrect shape for X. Should be 3-dimensional")
-        m, n = X.shape
         data = np.concatenate([X, y], axis=1)
         if shuffle:
             np.random.shuffle(data)
