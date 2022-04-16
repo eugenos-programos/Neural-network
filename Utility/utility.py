@@ -14,7 +14,7 @@ def train_test_split(X: np.array, y: np.array, test_size: float = .2) -> tuple:
         setting the size of test dataset, 
         should be in range between 0 and 1
     """
-    if not(isinstance(X, np.array) and isinstance(y, np.array)):
+    if not(isinstance(X, list) and isinstance(y, list)):
         raise TypeError("Input arrays should be numpy arrays")
     if test_size < 0 or test_size > 1:
         raise ValueError("Incorrect test size value - {}. Should be in interval (0, 1)".format(test_size))

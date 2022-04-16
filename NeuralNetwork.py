@@ -129,7 +129,7 @@ class NeuralNetwork:
             m = len(y)
             for index in range(m):
                 x_ = X[index]
-                outp, cache = self.predict(x_, return_activation_cache=True)  # (5, 1)
+                outp, cache = self.predict(x_, return_activation_cache=True)
                 dZ = outp - y[index]  # (1, 1)
                 A = cache["A{}".format(self.L - 2)]
                 dW = (1 / m) * (dZ @ A.T)  # (1, 1)
@@ -138,7 +138,6 @@ class NeuralNetwork:
                 self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
                 self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
                 for layer_index in range(self.L - 2, 0, -1):
-                    #print(layer_index)
                     Z = cache["Z{}".format(layer_index)]
                     A = cache["A{}".format(layer_index - 1)]
                     dZ = (W.T @ dZ) * self.activation_func_derivative(Z)

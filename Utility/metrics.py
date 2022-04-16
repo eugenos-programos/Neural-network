@@ -13,9 +13,14 @@ def F1_score(X: np.array, y: np.array):
     pass
 
 
-def accuracy(X: np.array, y: np.array):
+def accuracy(y_true: np.array, y_pred: np.array):
     """
+    Compute accuracy metric from two
+    input vectors
+    :param y_true:np.array - true labels
+    :param y_pred:np.array - predicted labels
+    :return: accuracy metric value
     """
-    correct = (X == y).sum()
-    all = len(y)
-    return correct / all
+    correct = (y_true == y_pred).sum()
+    m = len(y_true)
+    return correct / m
