@@ -185,3 +185,6 @@ class NeuralNetwork:
         if return_activation_cache:
             return A, cache_data
         return A
+
+    def __call__(self, X:np.array, return_activation_cache=False, *args: Any, **kwds: Any) -> Any:
+        return self.predict(X, return_activation_cache)
