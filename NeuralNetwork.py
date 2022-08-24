@@ -153,13 +153,13 @@ class NeuralNetwork:
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
-        Forward propagation step in neural network
+        Compute and return forward propagation result from X matrix
         :param X: np.array
-            input data
+            input matrix 
         :param return_activation_cache: bool
             return or not activation cache
-            that contain Z values  
-        :return: y - predicted target value 
+            that contain matrix from each layer and their activation
+        :return: y - predicted target vector
                 y, Z - predicted target value and activations in each layer
                 when return_activation_cache parameter is true 
         """
@@ -182,9 +182,9 @@ class NeuralNetwork:
                 cache_data["Z{}".format(layer_index)] = Z
                 cache_data["A{}".format(layer_index)] = A
         A = A.T
-        if return_activation_cache:
+        if return_activation_cache: 
             return A, cache_data
         return A
 
-    def __call__(self, X:np.array, return_activation_cache=False, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, X: np.array, return_activation_cache=False, *args: any, **kwds: any) -> any:
         return self.predict(X, return_activation_cache)
