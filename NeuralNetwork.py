@@ -52,7 +52,7 @@ class NeuralNetwork:
         self.parameters = {}
         self.neurons_number = neuron_number_list
         self.alpha = alpha
-        self.initialize_weights()
+        self.initialize_weights(initialization_type)
 
     def append(self,
                N: int,
@@ -84,30 +84,47 @@ class NeuralNetwork:
     def calculate_loss(X: np.array = None, y: np.array = None, data: np.array = None):
         pass
 
-    def initialize_weights(self) -> None:
+    def initialize_weights(self, initialization_type: str) -> None:
         """
         initialize neural network weights
+        :param initialization_type: string
+            initialization type name
         """
         for index in range(1, self.L):
             W, b = self.initialize_layer_weights(index)
             self.parameters["W{}".format(index)] = W
             self.parameters["b{}".format(index)] = b
 
-    def initialize_layer_weights(self, l: int) -> tuple:
+    def initialize_layer_weights(self, l: int, initialization_type: str) -> tuple:
         """
         initialize weights on l-th layer
         :param l: int
             layer index
+        :param initialization_type: string
+            initialization type name
         :return: weights and bias vector
         """
         if not isinstance(l, int):
             raise TypeError("l parameter should be int type")
         if l <= 0:
             raise ValueError(
-                "Uncorrect l value - {}. Must be not negative.".format(l))
-        W = np.random.randn(self.neurons_number[l],
-                            self.neurons_number[l - 1]) * 0.01
+                "Incorrect l value - {}. Must be not negative.".format(l))
+        if initialization_type not in ['random', 'zeros', 'He', 'Xavier']:
+            raise ValueError(
+                "Incorrect initialization_type argument value.\
+                 Must be one of these values - ['random', 'zeros', 'He', 'Xavier']"
+            )
+        weights_shape = (self.neurons_number[l], self.neurons_number[l - 1])
         b = np.zeros((self.neurons_number[l], 1))
+        if initialization_type == 'random':
+            W = np.random.randn(*weights_shape) * 0.01
+        elif initialization_type == 'zeros':
+            W = np.zeros(weights_shape)
+        elif initialization_type == 'He':
+            W = ... # he_initialization(shape)
+        elif initialization_type == 'Xavier':
+            W = ... # Xavier_initialization(shape)
+
         return W, b
 
     def fit(self,
