@@ -13,13 +13,15 @@ class NeuralNetwork:
     parameters: dict
     L: int
     neurons_number: np.array(int)
+    initialization_type: str
 
     def __init__(self,
                  L: int,
                  neuron_number: int = 0,
                  neuron_number_list: np.array = np.array([]),
                  activation: str = 'ReLU',
-                 alpha: float = 0.05) -> None:
+                 alpha: float = 0.05,
+                 initialization_type: str = 'random') -> None:
         """
         :param L: int
             neural network layer number (hidden+last)
@@ -29,6 +31,10 @@ class NeuralNetwork:
             (default is ReLU activation function)
         :param alpha: float
             alpha hyperparameter (default value is 0.05)
+        :param initialization_type: string
+            initialization type name,
+            possible values - {'random', 'zeros', 'He', 'Xavier'}
+            default value is random
         """
         self.L = L
         self.activation_func, self.activation_func_derivative = get_function_and_derivative(activation)
