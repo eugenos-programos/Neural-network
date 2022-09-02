@@ -1,3 +1,5 @@
+from array import ArrayType, array
+from ctypes import Array
 import numpy as np
 from activation_functions import get_function_and_derivative
 from types import LambdaType
@@ -52,7 +54,8 @@ class NeuralNetwork:
         self.parameters = {}
         self.neurons_number = neuron_number_list
         self.alpha = alpha
-        self.initialize_weights(initialization_type)
+        self.__initialization_type__ = initialization_type
+        self.__initialize_weights__()
 
     def append(self,
                N: int,
@@ -84,18 +87,41 @@ class NeuralNetwork:
     def calculate_loss(X: np.array = None, y: np.array = None, data: np.array = None):
         pass
 
-    def initialize_weights(self, initialization_type: str) -> None:
+    def __initialize_weights__(self) -> None:
         """
         initialize neural network weights
         :param initialization_type: string
             initialization type name
         """
         for index in range(1, self.L):
-            W, b = self.initialize_layer_weights(index)
+            W, b = self.__initialize_layer_weights__(index)
             self.parameters["W{}".format(index)] = W
             self.parameters["b{}".format(index)] = b
 
-    def initialize_layer_weights(self, l: int, initialization_type: str) -> tuple:
+    def __he_initialization__(shape: ArrayType) -> np.array:
+        """
+        HE weights initialization function
+        :param shape: arraylike object
+            weights shape 
+        :return: weights matrix with HE initialization
+        """
+        W = np.random.randn(*shape) * np.sqrt(2 / shape[1])
+        return W
+
+    def __Xavier_initialization__(shape: ArrayType) -> np.array:
+        """
+        Xavier weights initialization function
+        :param shape: arraylike object
+            weights shape 
+        :return: weights matrix with Xavier initialization
+        """
+        np.random.seed(0)
+        scale = 1/max(1., (np.sum(shape)) / 2.)
+        limit = np.sqrt(3.0 * scale)
+        W = np.random.uniform(-limit, limit, size=shape)
+        return W
+
+    def __initialize_layer_weights__(self, l: int) -> tuple:
         """
         initialize weights on l-th layer
         :param l: int
@@ -109,21 +135,21 @@ class NeuralNetwork:
         if l <= 0:
             raise ValueError(
                 "Incorrect l value - {}. Must be not negative.".format(l))
-        if initialization_type not in ['random', 'zeros', 'He', 'Xavier']:
+        if self.__initialization_type__ not in ['random', 'zeros', 'He', 'Xavier']:
             raise ValueError(
                 "Incorrect initialization_type argument value.\
                  Must be one of these values - ['random', 'zeros', 'He', 'Xavier']"
             )
         weights_shape = (self.neurons_number[l], self.neurons_number[l - 1])
         b = np.zeros((self.neurons_number[l], 1))
-        if initialization_type == 'random':
+        if self.__initialization_type__ == 'random':
             W = np.random.randn(*weights_shape) * 0.01
-        elif initialization_type == 'zeros':
+        elif self.__initialization_type__ == 'zeros':
             W = np.zeros(weights_shape)
-        elif initialization_type == 'He':
-            W = ... # he_initialization(shape)
-        elif initialization_type == 'Xavier':
-            W = ... # Xavier_initialization(shape)
+        elif self.__initialization_type__ == 'He':
+            W = NeuralNetwork.__he_initialization__(weights_shape)
+        elif self.__initialization_type__ == 'Xavier':
+            W = NeuralNetwork.__Xavier_initialization__(weights_shape)
 
         return W, b
 
