@@ -143,7 +143,7 @@ class NeuralNetwork:
         weights_shape = (self.neurons_number[l], self.neurons_number[l - 1])
         b = np.zeros((self.neurons_number[l], 1))
         if self.__initialization_type__ == 'random':
-            W = np.random.randn(*weights_shape) * 0.01
+            W = np.random.randn(*weights_shape) * 10
         elif self.__initialization_type__ == 'zeros':
             W = np.zeros(weights_shape)
         elif self.__initialization_type__ == 'He':
@@ -160,7 +160,7 @@ class NeuralNetwork:
             return_losses=False,
             loss=None):
         """
-        Backward propagation step for neural network
+        Backward propagation implementing for neural network
         :param X: np.array
             input data
         :param y: np.array
@@ -175,7 +175,25 @@ class NeuralNetwork:
         if return_losses:
             loses = []
         for epoch in range(n_epochs):
-            m = len(y)
+            m = y.shape[0]
+            outp, cache = self.predict(X, return_activation_cache=True) 
+            dZ = outp - y  ##### (10 , 1)
+            A = cache["A{}".format(self.L - 2)]
+            dW = (1 / m) * (dZ.T @ A) ### (1, 10)
+            db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)  ### (10 , 1)
+            W = self.parameters["W{}".format(self.L - 1)]
+            self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
+            self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
+            for layer_index in range(self.L - 2, 0, -1):
+                Z = cache["Z{}".format(layer_index)]
+                A = cache["A{}".format(layer_index - 1)]
+                print(self.activation_func_derivative(Z).shape)
+                dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
+                dW = (1 / m) * (dZ @ A.T)
+                db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)
+
+
+            """
             for index in range(m):
                 x_ = X[index]
                 outp, cache = self.predict(x_, return_activation_cache=True)
@@ -199,6 +217,8 @@ class NeuralNetwork:
                 loses.append(loss(self.predict(X), y))
         if return_losses:
             return loses
+        """
+        return 0
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
