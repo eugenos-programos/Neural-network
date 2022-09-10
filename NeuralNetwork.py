@@ -176,21 +176,43 @@ class NeuralNetwork:
             loses = []
         for epoch in range(n_epochs):
             m = y.shape[0]
-            outp, cache = self.predict(X, return_activation_cache=True) 
-            dZ = outp - y  ##### (10 , 1)
-            A = cache["A{}".format(self.L - 2)]
-            dW = (1 / m) * (dZ.T @ A) ### (1, 10)
-            db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)  ### (10 , 1)
-            W = self.parameters["W{}".format(self.L - 1)]
-            self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
-            self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-            for layer_index in range(self.L - 2, 0, -1):
-                Z = cache["Z{}".format(layer_index)]
-                A = cache["A{}".format(layer_index - 1)]
-                print(self.activation_func_derivative(Z).shape)
-                dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
-                dW = (1 / m) * (dZ @ A.T)
-                db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)
+
+            batch_size = y.shape[0]
+            batch_count = 1
+            for batch_index in range(batch_count):  ## replace 
+                
+                
+
+                ### for all examples into batch
+                for row_index in range(batch_index * batch_size, (batch_index + 1) * batch_size):
+
+                    X_temp = X[row, ]
+                outp, cache = self.predict(X, return_activation_cache=True)   # (20, 1)
+                dZ = outp - y  ##### (20 , 1)  ?(1, 20)
+                dW = (1 / m) * (dZ @ outp.T)   ### (20, 20)
+                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  ### (1 , 1)
+                W = self.parameters["W{}".format(self.L - 1)]   ### (1, 10)
+                dW = np.sum(dW)
+                db = np.sum(db)
+                self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
+                self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
+
+
+                ### For all layers compute derivatives
+                for layer_index in range(self.L - 2, 0, -1):
+                    #dZ = np.sum(dZ / m)
+                    Z = cache["Z{}".format(layer_index)]
+                    A = cache["A{}".format(layer_index - 1)]
+                    W = self.parameters["W{}".format(layer_index)]
+                    derivative_temp = np.mean(self.activation_func_derivative(Z), axis=1, keepdims=True)
+                    dZ = np.mean(dZ, axis=0, keepdims=True)
+                    dZ = np.multiply((np.transpose(W) * dZ), derivative_temp, dtype=float)  #(5,1)
+                    A = np.mean(A, axis=1, keepdims=True)
+                    dW = dZ @ A
+                    db = np.sum(dZ, axis=1, keepdims=True)
+                    print(db.shape, self.parameters["b{}".format(layer_index)].shape)
+                    self.parameters["W{}".format(layer_index)] -= self.alpha * dW.T
+                    self.parameters["b{}".format(layer_index)] -= self.alpha * db
 
 
             """
