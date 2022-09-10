@@ -179,15 +179,39 @@ class NeuralNetwork:
 
             batch_size = y.shape[0]
             batch_count = 1
-            for batch_index in range(batch_count):  ## replace 
-                
-                
+            gradients = {}
 
+            for par_key in self.parameters.keys():
+                    if par_key[0] == "W":
+                        gradients[par_key] = np.zeros(self.parameters[par_key].shape)
+                    else:
+                        gradients[par_key] = np.zeros(self.parameters[par_key].shape)
+
+            for batch_index in range(batch_count):  ## replace 
+            
                 ### for all examples into batch
                 for row_index in range(batch_index * batch_size, (batch_index + 1) * batch_size):
 
-                    X_temp = X[row, ]
-                outp, cache = self.predict(X, return_activation_cache=True)   # (20, 1)
+                    X_temp = X[row_index]
+                    y_temp = y[row_index]
+
+                    outp, cache = self.predict(X_temp, return_activation_cache=True)   # (20, 1)
+
+                    dZ = outp - y_temp
+
+                    ### 
+                    for layer_index in range(self.L - 1, 0, -1):
+                        if layer_index == self.L - 1:
+                            gradients[f"W{layer_index}"] += dZ * np.transpose(outp)
+                        else:
+                            #print(cache[f"A{layer_index}"].shape, dZ.shape, layer_index, self.parameters[f"W{layer_index + 1}"].shape)
+                            dZ = np.multiply(np.transpose(self.parameters[f"W{layer_index}"]), dZ)
+                            dZ *= self.activation_func_derivative(cache[f"Z{layer_index -  1}"])
+                            gradients[f"W{layer_index}"] += dZ * np.transpose(cache[f"A{layer_index}"])
+                        gradients[f"b{layer_index}"] += dZ      
+                self.__update_parameters__(gradients, batch_size)
+        return None
+        '''
                 dZ = outp - y  ##### (20 , 1)  ?(1, 20)
                 dW = (1 / m) * (dZ @ outp.T)   ### (20, 20)
                 db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  ### (1 , 1)
@@ -213,34 +237,12 @@ class NeuralNetwork:
                     print(db.shape, self.parameters["b{}".format(layer_index)].shape)
                     self.parameters["W{}".format(layer_index)] -= self.alpha * dW.T
                     self.parameters["b{}".format(layer_index)] -= self.alpha * db
-
-
-            """
-            for index in range(m):
-                x_ = X[index]
-                outp, cache = self.predict(x_, return_activation_cache=True)
-                dZ = outp - y[index]  # (1, 1)
-                A = cache["A{}".format(self.L - 2)]
-                dW = (1 / m) * (dZ @ A.T)  # (1, 1)
-                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  # (5, 1)
-                W = self.parameters["W{}".format(self.L - 1)]  # (1, 5)
-                self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
-                self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-                for layer_index in range(self.L - 2, 0, -1):
-                    Z = cache["Z{}".format(layer_index)]
-                    A = cache["A{}".format(layer_index - 1)]
-                    dZ = (W.T @ dZ) * self.activation_func_derivative(Z)
-                    dW = (1 / m) * (dZ @ A.T)
-                    db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
-                    self.parameters["W{}".format(layer_index)] -= self.alpha * dW
-                    self.parameters["b{}".format(layer_index)] -= self.alpha * db
-                    W = self.parameters["W{}".format(layer_index)]
-            if return_losses:
-                loses.append(loss(self.predict(X), y))
-        if return_losses:
-            return loses
-        """
+                '''
         return 0
+
+    def __update_parameters__(self, gradients, batch_size):
+        for key in self.parameters.keys():
+            self.parameters[key] -= self.alpha * 1.0/batch_size * gradients[key]
 
     def predict(self, X: np.array, return_activation_cache=False):
         """
