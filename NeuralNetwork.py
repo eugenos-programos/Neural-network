@@ -173,43 +173,34 @@ class NeuralNetwork:
             loss for return_losses parameter
         """
         if return_losses:
-            loses = []
+            losses = []
         for epoch in range(n_epochs):
             m = y.shape[0]
 
             batch_size = y.shape[0]
-            batch_count = 1
-            gradients = {}
-
-            for par_key in self.parameters.keys():
-                    if par_key[0] == "W":
-                        gradients[par_key] = np.zeros(self.parameters[par_key].shape)
-                    else:
-                        gradients[par_key] = np.zeros(self.parameters[par_key].shape)
-
-            for batch_index in range(batch_count):  ## replace 
             
-                ### for all examples into batch
-                for row_index in range(batch_index * batch_size, (batch_index + 1) * batch_size):
+            ### for all examples into batch
+            X_temp = X
+            y_temp = y
+            gradients = {}
+            outp, cache = self.predict(X_temp, return_activation_cache=True)   # (20, 1)
 
-                    X_temp = X[row_index]
-                    y_temp = y[row_index]
+            dZ = outp - y_temp
 
-                    outp, cache = self.predict(X_temp, return_activation_cache=True)   # (20, 1)
-
-                    dZ = outp - y_temp
-
-                    ### 
-                    for layer_index in range(self.L - 1, 0, -1):
-                        if layer_index == self.L - 1:
-                            gradients[f"W{layer_index}"] += dZ * np.transpose(outp)
-                        else:
+            for layer_index in range(self.L - 1, 0, -1):
+                if layer_index == self.L - 1:
+                    gradients[f"W{layer_index}"] = dZ * np.transpose(outp)
+                else:
                             #print(cache[f"A{layer_index}"].shape, dZ.shape, layer_index, self.parameters[f"W{layer_index + 1}"].shape)
-                            dZ = np.multiply(np.transpose(self.parameters[f"W{layer_index}"]), dZ)
-                            dZ *= self.activation_func_derivative(cache[f"Z{layer_index -  1}"])
-                            gradients[f"W{layer_index}"] += dZ * np.transpose(cache[f"A{layer_index}"])
-                        gradients[f"b{layer_index}"] += dZ      
-                self.__update_parameters__(gradients, batch_size)
+                            print(np.transpose(self.parameters[f"W{layer_index + 1}"]).shape, dZ.shape)
+                            dZ = np.dot(np.transpose(self.parameters[f"W{layer_index + 1}"]), dZ)
+                            dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
+                            dW_temp = dZ * np.transpose(cache[f"A{layer_index}"])
+                            db_temp = dZ
+                            print(dW_temp.shape, gradients[f"W{layer_index}"].shape)
+                            gradients[f"W{layer_index}"] += dW_temp
+                            gradients[f"b{layer_index}"] += db_temp    
+                #self.__update_parameters__(gradients, batch_size)
         return None
         '''
                 dZ = outp - y  ##### (20 , 1)  ?(1, 20)
@@ -264,12 +255,12 @@ class NeuralNetwork:
             np.dot(self.parameters["W1"], X.T)
         except Exception as e:
             raise ValueError("X shape doesn't corresponding the the neural-net first layer size")
-        A = X.T
+        A = X
         cache_data = {"A0" : A}
         for layer_index in range(1, self.L):
             W = self.parameters["W{}".format(layer_index)]
             b = self.parameters["b{}".format(layer_index)]
-            Z = np.dot(W, A) + b
+            Z = W @ A + b
             A = self.activation_func(Z)
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
