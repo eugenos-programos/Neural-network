@@ -1,4 +1,5 @@
 from array import ArrayType, array
+from calendar import leapdays
 from ctypes import Array
 import numpy as np
 from activation_functions import get_function_and_derivative
@@ -22,7 +23,7 @@ class NeuralNetwork:
                  neuron_number: int = 0,
                  neuron_number_list: np.array = np.array([]),
                  activation: str = 'ReLU',
-                 alpha: float = 0.05,
+                 alpha: float = 1e-3,
                  initialization_type: str = 'random') -> None:
         """
         :param L: int
@@ -84,8 +85,10 @@ class NeuralNetwork:
                              format(len(activations_list), N))
         pass
 
-    def calculate_loss(X: np.array = None, y: np.array = None, data: np.array = None):
-        pass
+    def calculate_loss_value(self, X: np.array, y: np.array, loss_func = mean_absolute_loss, data: np.array = None):
+        y_pred = self.predict(X)
+        return loss_func(y, y_pred)
+
 
     def __initialize_weights__(self) -> None:
         """
@@ -153,89 +156,9 @@ class NeuralNetwork:
 
         return W, b
 
-    def fit(self,
-            X,
-            y,
-            n_epochs=10,
-            return_losses=False,
-            loss=None):
-        """
-        Backward propagation implementing for neural network
-        :param X: np.array
-            input data
-        :param y: np.array
-            target data
-        :param n_epochs: int
-            number of epochs, default is 10
-        :param return_losses: bool
-            return loss on each iteration, default is False
-        :param loss: built-in function
-            loss for return_losses parameter
-        """
-        if return_losses:
-            losses = []
-        for epoch in range(n_epochs):
-            m = y.shape[0]
-
-            batch_size = y.shape[0]
-            
-            ### for all examples into batch
-            X_temp = X
-            y_temp = y
-            gradients = {}
-            outp, cache = self.predict(X_temp, return_activation_cache=True)   # (20, 1)
-
-            dZ = outp - y_temp
-
-            for layer_index in range(self.L - 1, 0, -1):
-                if layer_index == self.L - 1:
-                    gradients[f"W{layer_index}"] = dZ * np.transpose(outp)
-                else:
-                            #print(cache[f"A{layer_index}"].shape, dZ.shape, layer_index, self.parameters[f"W{layer_index + 1}"].shape)
-                            dZ = np.transpose(self.parameters[f"W{layer_index + 1}"]) @ dZ
-                            dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
-                            dW_temp = dZ * np.transpose(cache[f"A{layer_index}"])
-                            db_temp = dZ
-                            gradients[f"W{layer_index}"] = dW_temp
-                            gradients[f"b{layer_index}"] = db_temp    
-                #self.__update_parameters__(gradients, batch_size)
-        return None
-        '''
-                dZ = outp - y  ##### (20 , 1)  ?(1, 20)
-                dW = (1 / m) * (dZ @ outp.T)   ### (20, 20)
-                db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)  ### (1 , 1)
-                W = self.parameters["W{}".format(self.L - 1)]   ### (1, 10)
-                dW = np.sum(dW)
-                db = np.sum(db)
-                self.parameters["W{}".format(self.L - 1)] -= self.alpha * dW
-                self.parameters["b{}".format(self.L - 1)] -= self.alpha * db
-
-
-                ### For all layers compute derivatives
-                for layer_index in range(self.L - 2, 0, -1):
-                    #dZ = np.sum(dZ / m)
-                    Z = cache["Z{}".format(layer_index)]
-                    A = cache["A{}".format(layer_index - 1)]
-                    W = self.parameters["W{}".format(layer_index)]
-                    derivative_temp = np.mean(self.activation_func_derivative(Z), axis=1, keepdims=True)
-                    dZ = np.mean(dZ, axis=0, keepdims=True)
-                    dZ = np.multiply((np.transpose(W) * dZ), derivative_temp, dtype=float)  #(5,1)
-                    A = np.mean(A, axis=1, keepdims=True)
-                    dW = dZ @ A
-                    db = np.sum(dZ, axis=1, keepdims=True)
-                    print(db.shape, self.parameters["b{}".format(layer_index)].shape)
-                    self.parameters["W{}".format(layer_index)] -= self.alpha * dW.T
-                    self.parameters["b{}".format(layer_index)] -= self.alpha * db
-                '''
-        return 0
-
-    def __update_parameters__(self, gradients, batch_size):
-        for key in self.parameters.keys():
-            self.parameters[key] -= self.alpha * 1.0/batch_size * gradients[key]
-
     def predict(self, X: np.array, return_activation_cache=False):
         """
-        Compute and return forward propagation result from X matrix
+        Compute and return forward propagation result using X matrix as input
         :param X: np.array
             input matrix 
         :param return_activation_cache: bool
@@ -254,19 +177,65 @@ class NeuralNetwork:
         except Exception as e:
             raise ValueError("X shape doesn't corresponding the the neural-net first layer size")
         A = X
-        cache_data = {"A0" : A}
+        if return_activation_cache:
+            cache_data = {"A0" : A}
         for layer_index in range(1, self.L):
             W = self.parameters["W{}".format(layer_index)]
             b = self.parameters["b{}".format(layer_index)]
             Z = W @ A + b
-            A = self.activation_func(Z)
+            A = self.activation_func(Z) if layer_index == self.L - 1 else Z
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
                 cache_data["A{}".format(layer_index)] = A
-        A = A.T
         if return_activation_cache: 
             return A, cache_data
         return A
+
+    def fit(self,
+            X,
+            y):
+        """
+        Backward propagation implementing for neural network
+        :param X: np.array
+            input data
+        :param y: np.array
+            target data
+        :param n_epochs: int
+            number of epochs, default is 10
+        :param return_losses: bool
+            return loss on each iteration, default is False
+        :param loss: built-in function
+            loss for return_losses parameter
+        """
+        gradients = {}
+        outp, cache = self.predict(X, return_activation_cache=True)   # (20, 1)
+
+        dZ = outp - y  # (20, 1, 1)
+        for layer_index in range(self.L - 1, 0, -1):   
+            if layer_index == self.L - 1:
+                gradients[f"W{layer_index}"] = dZ @ np.transpose(outp, axes=(0, 2, 1))  ### 
+            else:
+                dZ = self.parameters[f"W{layer_index + 1}"].T @ dZ
+                dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
+                dW_temp = dZ @ np.transpose(cache[f"A{layer_index - 1}"], axes=(0, 2, 1))
+                db_temp = dZ
+                gradients[f"W{layer_index}"] = dW_temp
+                gradients[f"b{layer_index}"] = db_temp    
+        self.__update_parameters__(gradients)
+        return None
+
+    def __update_parameters__(self, gradients : dict) -> None:
+        """
+        Update bias and weights parameters using
+        gradient average across all batches
+        :param gradients: dict
+            dictionary with gradient for all parameters
+        :param batch_size: int
+            size of the batch
+        :return: None
+        """
+        for key in gradients.keys():
+            self.parameters[key] -= self.alpha * gradients[key].mean(axis=0)
 
     def __call__(self, X: np.array, return_activation_cache=False, *args: any, **kwds: any) -> any:
         return self.predict(X, return_activation_cache)
