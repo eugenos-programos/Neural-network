@@ -192,14 +192,12 @@ class NeuralNetwork:
                     gradients[f"W{layer_index}"] = dZ * np.transpose(outp)
                 else:
                             #print(cache[f"A{layer_index}"].shape, dZ.shape, layer_index, self.parameters[f"W{layer_index + 1}"].shape)
-                            print(np.transpose(self.parameters[f"W{layer_index + 1}"]).shape, dZ.shape)
-                            dZ = np.dot(np.transpose(self.parameters[f"W{layer_index + 1}"]), dZ)
+                            dZ = np.transpose(self.parameters[f"W{layer_index + 1}"]) @ dZ
                             dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
                             dW_temp = dZ * np.transpose(cache[f"A{layer_index}"])
                             db_temp = dZ
-                            print(dW_temp.shape, gradients[f"W{layer_index}"].shape)
-                            gradients[f"W{layer_index}"] += dW_temp
-                            gradients[f"b{layer_index}"] += db_temp    
+                            gradients[f"W{layer_index}"] = dW_temp
+                            gradients[f"b{layer_index}"] = db_temp    
                 #self.__update_parameters__(gradients, batch_size)
         return None
         '''
