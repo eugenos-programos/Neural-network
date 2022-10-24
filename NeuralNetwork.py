@@ -1,8 +1,10 @@
 from array import ArrayType, array
 from calendar import leapdays
 from ctypes import Array
+from functools import cache
 import numpy as np
 from activation_functions import get_function_and_derivative
+from activation_functions import sigmoid
 from types import LambdaType
 from Utility.losses import mean_absolute_loss
 import matplotlib.pyplot as plt
@@ -17,6 +19,7 @@ class NeuralNetwork:
     L: int
     neurons_number: np.array(int)
     initialization_type: str
+    out_activation: str
 
     def __init__(self,
                  L: int,
@@ -24,7 +27,8 @@ class NeuralNetwork:
                  neuron_number_list: np.array = np.array([]),
                  activation: str = 'ReLU',
                  alpha: float = 1e-3,
-                 initialization_type: str = 'random') -> None:
+                 initialization_type: str = 'random',
+                 out_activation: str = None) -> None:
         """
         :param L: int
             neural network layer number (hidden+last)
@@ -57,6 +61,10 @@ class NeuralNetwork:
         self.alpha = alpha
         self.__initialization_type__ = initialization_type
         self.__initialize_weights__()
+        if out_activation is None:
+            self.out_activation = out_activation
+        if out_activation == 'sigmoid':
+            self.out_activation = sigmoid
 
     def append(self,
                N: int,
@@ -118,7 +126,6 @@ class NeuralNetwork:
             weights shape 
         :return: weights matrix with Xavier initialization
         """
-        np.random.seed(0)
         scale = 1/max(1., (np.sum(shape)) / 2.)
         limit = np.sqrt(3.0 * scale)
         W = np.random.uniform(-limit, limit, size=shape)
@@ -146,7 +153,7 @@ class NeuralNetwork:
         weights_shape = (self.neurons_number[l], self.neurons_number[l - 1])
         b = np.zeros((self.neurons_number[l], 1))
         if self.__initialization_type__ == 'random':
-            W = np.random.randn(*weights_shape) * 10
+            W = np.random.normal(0., pow(self.neurons_number[l], -.5), size=weights_shape)
         elif self.__initialization_type__ == 'zeros':
             W = np.zeros(weights_shape)
         elif self.__initialization_type__ == 'He':
@@ -173,7 +180,7 @@ class NeuralNetwork:
         if len(X.shape) == 1:
             X = X.reshape(1, X.shape[0])
         try:
-            np.dot(self.parameters["W1"], X.T)
+            self.parameters["W1"] @ X
         except Exception as e:
             raise ValueError("X shape doesn't corresponding the the neural-net first layer size")
         A = X
@@ -183,7 +190,10 @@ class NeuralNetwork:
             W = self.parameters["W{}".format(layer_index)]
             b = self.parameters["b{}".format(layer_index)]
             Z = W @ A + b
-            A = self.activation_func(Z) if layer_index == self.L - 1 else Z
+            if layer_index == self.L - 1:
+                A = Z
+            else:
+                A = self.activation_func(Z)
             if return_activation_cache:
                 cache_data["Z{}".format(layer_index)] = Z
                 cache_data["A{}".format(layer_index)] = A

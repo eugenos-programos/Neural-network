@@ -1,3 +1,4 @@
+from re import X
 import numpy as np
 
 
@@ -18,6 +19,9 @@ def get_function_and_derivative(name: str):
     elif low_name == 'sigmoid':
         result_func = sigmoid
         result_func_der = sigmoid_derivative
+    elif low_name == 'linear':
+        result_func = lambda x: x
+        result_func_der = lambda x: np.ones(x.shape)
     else:
         raise ValueError("Invalid function name")
     return result_func, result_func_der
@@ -30,7 +34,7 @@ def ReLU(X: np.array) -> np.array:
     :param X: input numpy array
     :return: f(X), where f - ReLU function  
     """
-    X = np.where(X < 0, 0, X)
+    X = np.maximum(0, X)
     return X
 
 
@@ -40,7 +44,7 @@ def relu_derivative(X: np.array) -> np.array:
     :param X: numpy array
     :return: df(x), or derivative of ReLU function 
     """
-    dX = np.where(X > 0, 1, 0)
+    dX = np.maximum(0, 1)
     return dX
 
 
