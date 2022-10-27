@@ -1,3 +1,4 @@
+from cgi import test
 from NeuralNetwork import NeuralNetwork
 from sklearn.datasets import make_regression
 from Utility.losses import mean_absolute_loss
@@ -5,24 +6,45 @@ from activation_functions import sigmoid
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from torch.utils.data import DataLoader
+from torchvision.datasets import MNIST
+import torchvision
 
-nn = NeuralNetwork(3, neuron_number_list=np.array([1, 5, 1]), activation='ReLU', initialization_type='random', alpha=1e-3)
-data = make_regression(100, 1, noise=2, bias=1.5)
-X = data[0].reshape(1, 100, 1, 1)
-y = data[1].reshape(1, 100, 1, 1)
+nn = NeuralNetwork(4, neuron_number_list=np.array([28**2, 10, 10, 1]), activation='ReLU', initialization_type='random', alpha=1e-5)
 losses = []
-plt.scatter(data[0], data[1])
-plt.scatter(data[0], nn(X).reshape(-1), c='r')
-for epoch_number in range(30):
-    nn.fit(X[0], y[0])
-    losses.append(mean_absolute_loss(y, nn(X)))
-    if epoch_number % 10 == 0:
-        pass
-        #plt.scatter(data[0], nn(X).reshape(-1))
-print(nn.parameters['W2'])
-plt.scatter(data[0], nn(X).reshape(-1), c='g')
+train_loader = DataLoader(
+  torchvision.datasets.MNIST('./data', train=True, download=True,
+                             transform=torchvision.transforms.Compose([
+                               torchvision.transforms.ToTensor(),
+                               torchvision.transforms.Normalize(
+                                 (0.1307,), (0.3081,))
+                             ])),
+  batch_size=20, shuffle=True)
+
+test_loader = DataLoader(
+  torchvision.datasets.MNIST('./data', train=False, download=True,
+                             transform=torchvision.transforms.Compose([
+                               torchvision.transforms.ToTensor(),
+                               torchvision.transforms.Normalize(
+                                 (0.1307,), (0.3081,))
+                             ])),
+  batch_size=20, shuffle=True)
+
+
+n_epochs = 3
+for epoch_index in range(n_epochs):
+    for X_batch, y_batch in train_loader:
+        X_batch = X_batch.reshape((20, 28 ** 2, 1)).numpy()
+        y_batch = y_batch.reshape((20, 1, 1)).numpy()
+        nn.fit(X_batch, y_batch)
+    for X_test, y_test in test_loader:
+        X_test = X_test.reshape((20, 28 ** 2, 1)).numpy()
+        y_test = y_test.reshape((20, 1, 1)).numpy()
+        losses.append(nn.calculate_loss_value(X_test, y_test))
+
+
+X = list(test_loader)[0][0][0].reshape((1, 28 ** 2, 1)).numpy()
+print(nn(X))
+plt.imshow(X.reshape((28, 28)))
 plt.show()
-#print((nn(X) == 0).sum())
-#plt.scatter(data[0], data[1])
-#plt.scatter(data[0], nn(X).reshape(-1))
-#plt.show()
+
