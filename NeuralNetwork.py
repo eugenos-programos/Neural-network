@@ -22,11 +22,10 @@ class NeuralNetwork:
     out_activation: str
 
     def __init__(self,
-                 L: int,
+                 L: int = None,
                  neuron_number: int = 0,
                  neuron_number_list: np.array = np.array([]),
                  activation: str = 'ReLU',
-                 alpha: float = 1e-3,
                  initialization_type: str = 'random',
                  out_activation: str = None) -> None:
         """
@@ -45,10 +44,14 @@ class NeuralNetwork:
         """
         self.L = L
         self.activation_func, self.activation_func_derivative = get_function_and_derivative(activation)
-        layer_count = neuron_number_list.shape[0]
-        if layer_count and layer_count != L:
+        if neuron_number_list is not None:
+            layer_count = neuron_number_list.shape[0]
+        if L is None and neuron_number_list is None:
+            raise ValueError("On of paramters {L or neuron_number_list} should be initialized")
+        if self.L is not None and neuron_number_list is not None and layer_count != L:
             raise ValueError(
                 "Neuron number list length should be equal to L parameter")
+        self.L = len(neuron_number_list)
         if (not layer_count
             and not neuron_number) or (layer_count and neuron_number):
             raise ValueError(
@@ -58,7 +61,6 @@ class NeuralNetwork:
             neuron_number_list = [neuron_number for _ in range(L)]
         self.parameters = {}
         self.neurons_number = neuron_number_list
-        self.alpha = alpha
         self.__initialization_type__ = initialization_type
         self.__initialize_weights__()
         if out_activation is None:
@@ -96,7 +98,11 @@ class NeuralNetwork:
     def calculate_loss_value(self, X: np.array, y: np.array, loss_func = mean_absolute_loss, data: np.array = None):
         y_pred = self.predict(X)
         return loss_func(y, y_pred)
-
+    
+    def compile(self, loss_function, learning_rate=1e-3, optimizer="SGD"):
+        self.alpha = learning_rate
+        self.optimizer = "SGD"
+        self.loss_function = loss_function
 
     def __initialize_weights__(self) -> None:
         """
@@ -153,7 +159,7 @@ class NeuralNetwork:
         weights_shape = (self.neurons_number[l], self.neurons_number[l - 1])
         b = np.zeros((self.neurons_number[l], 1))
         if self.__initialization_type__ == 'random':
-            W = np.random.normal(0., pow(self.neurons_number[l], -.5), size=weights_shape)
+            W = np.random.randn(*weights_shape)
         elif self.__initialization_type__ == 'zeros':
             W = np.zeros(weights_shape)
         elif self.__initialization_type__ == 'He':
@@ -182,7 +188,7 @@ class NeuralNetwork:
         try:
             self.parameters["W1"] @ X
         except Exception as e:
-            raise ValueError("X shape doesn't corresponding the the neural-net first layer size")
+            raise ValueError("X shape doesn't correspond to the neural-net first layer size")
         A = X
         if return_activation_cache:
             cache_data = {"A0" : A}
@@ -203,7 +209,9 @@ class NeuralNetwork:
 
     def fit(self,
             X,
-            y):
+            y,
+            batch_size=1,
+            n_epochs=1):
         """
         Backward propagation implementing for neural network
         :param X: np.array
@@ -217,22 +225,52 @@ class NeuralNetwork:
         :param loss: built-in function
             loss for return_losses parameter
         """
-        gradients = {}
-        outp, cache = self.predict(X, return_activation_cache=True)   # (20, 1)
+        X = np.expand_dims(X, -1)
+        y = np.expand_dims(y, -1)
+        X_batched, y_batched, batch_numb = self.__split_data_into_batches__(X, y, batch_size)
+        loss = []
 
-        dZ = outp - y  # (20, 1, 1)
-        for layer_index in range(self.L - 1, 0, -1):   
-            if layer_index == self.L - 1:
-                gradients[f"W{layer_index}"] = dZ @ np.transpose(outp, axes=(0, 2, 1))  ### 
-            else:
-                dZ = self.parameters[f"W{layer_index + 1}"].T @ dZ
-                dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
-                dW_temp = dZ @ np.transpose(cache[f"A{layer_index - 1}"], axes=(0, 2, 1))
-                db_temp = dZ
-                gradients[f"W{layer_index}"] = dW_temp
-                gradients[f"b{layer_index}"] = db_temp    
-        self.__update_parameters__(gradients)
-        return None
+        for epoch_index in range(n_epochs):
+            for batch_index in range(batch_numb):
+
+                X_batch = X_batched[batch_index]
+                y_batch = y_batched[batch_index]
+
+                gradients = {}
+                outp, cache = self.predict(X_batch, return_activation_cache=True)  
+
+                dZ = outp - y_batch
+                for layer_index in range(self.L - 1, 0, -1):   
+                    if layer_index == self.L - 1:
+                        gradients[f"W{layer_index}"] = dZ @ np.transpose(outp, axes=(0, 2, 1))  
+                    else:
+                        dZ = self.parameters[f"W{layer_index + 1}"].T @ dZ
+                        dZ *= self.activation_func_derivative(cache[f"Z{layer_index}"])
+                        dW_temp = dZ @ np.transpose(cache[f"A{layer_index - 1}"], axes=(0, 2, 1))
+                        db_temp = dZ
+                        gradients[f"W{layer_index}"] = dW_temp
+                        gradients[f"b{layer_index}"] = db_temp    
+                self.__update_parameters__(gradients)
+            loss_val = self.loss_function(y, self.predict(X))
+            print(f"Epoch - {epoch_index}/{n_epochs} | loss value - {loss_val}")
+            loss.append(loss_val)
+        return loss
+    
+    def __split_data_into_batches__(self, X : np.array, y : np.array, batch_size : int) -> tuple([np.array, np.array]):
+        """
+        Split dataset into minibatches
+        X and y variables should have the following shapes:
+        :param X: np.array - shape [M x N1 x N2]
+        :param y: np.array - shape [N x 1]
+        :return: batched X and y arrays
+        """
+        n_samples = X.shape[0]
+        if n_samples != y.shape[0]:
+            raise ValueError("X shape doesn't correspond to y shape")
+        if n_samples % batch_size != 0:
+            X = X[:n_samples - n_samples % batch_size]
+            y = y[:n_samples - n_samples % batch_size]
+        return X.reshape(n_samples // batch_size, batch_size, X.shape[1], 1), y.reshape(n_samples // batch_size, batch_size, y.shape[1], 1), n_samples // batch_size
 
     def __update_parameters__(self, gradients : dict) -> None:
         """
